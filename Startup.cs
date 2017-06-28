@@ -48,6 +48,7 @@ namespace LetsEncryptDACore
 							foreach (var fileName in fileNames)
 							{
 								var fileCreationTime = File.GetCreationTime(Path.Combine(acmeDirectory, fileName));
+								await context.Response.WriteAsync($"fileName - fileCreationTime\n");
 
 								if (fileCreationTime.Equals(pathRequestDateTime))
 								{
