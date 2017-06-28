@@ -43,14 +43,18 @@ namespace LetsEncryptDACore
 							var fileNames = Directory.GetFiles(acmeDirectory);
 							foreach (var fileName in fileNames)
 							{
-								var fileLastWriteTime = File.GetLastWriteTime(Path.Combine(acmeDirectory, fileName));
-								var fileDateTimeOffset = new DateTimeOffset(fileLastWriteTime);
+								var filePath = Path.Combine(acmeDirectory, fileName);
+								var fileInfo = new FileInfo(filePath);
+								var fileDateTimeOffset = new DateTimeOffset(fileInfo.LastWriteTime);
 								var fileEpoch = fileDateTimeOffset.ToUnixTimeSeconds();
 
 								// Check for file creaded around 3 seconds of the requested
 								if (Math.Abs(unixTimestamp - fileEpoch) < 3)
 								{
-									await context.Response.WriteAsync($"{fileName} The match!\n");
+									//await context.Response.WriteAsync($"{fileName} The match!\n");
+									var fileContents = File.ReadAllText(filePath);
+
+									await context.Response.WriteAsync(fileContents);
 								}
 							}
 						}
