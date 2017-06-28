@@ -2,7 +2,10 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
+using System;
+using System.IO;
 
 namespace LetsEncryptDACore
 {
@@ -24,7 +27,34 @@ namespace LetsEncryptDACore
                 app.UseDeveloperExceptionPage();
             }
 
-			app.UseStaticFiles();
+			//app.UseStaticFiles();
+
+			app.Map(new PathString("/.well-known/acme-challenge"), branch =>
+			{
+				branch.Run(async context => {
+					var pathValue = context.Request.Path.Value;
+					const string prefixValue = "/letsencrypt_";
+
+					if (pathValue.StartsWith(prefixValue))
+					{
+						if (int.TryParse(pathValue.Replace(prefixValue, string.Empty), out var unixTimestamp))
+						{
+							//await context.Response.WriteAsync(unixTimestamp);
+							var dateTimeOffset = DateTimeOffset.FromUnixTimeSeconds(unixTimestamp);
+							var dateTime = dateTimeOffset.UtcDateTime;
+
+							await context.Response.WriteAsync(dateTime.ToString());
+
+							var files = Directory.GetFiles("/var/www/html/.well-known/acme-challenge");
+							foreach (var file in files)
+							{
+								await context.Response.WriteAsync(file);
+							}
+						}
+					}
+				});
+			});
+
 
 			app.Run(async (context) =>
             {
