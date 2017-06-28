@@ -34,21 +34,25 @@ namespace LetsEncryptDACore
 				branch.Run(async context => {
 					var pathValue = context.Request.Path.Value;
 					const string prefixValue = "/letsencrypt_";
+					const string acmeDirectory = "/var/www/html/.well-known/acme-challenge";
 
 					if (pathValue.StartsWith(prefixValue))
 					{
 						if (int.TryParse(pathValue.Replace(prefixValue, string.Empty), out var unixTimestamp))
 						{
-							//await context.Response.WriteAsync(unixTimestamp);
-							var dateTimeOffset = DateTimeOffset.FromUnixTimeSeconds(unixTimestamp);
-							var dateTime = dateTimeOffset.UtcDateTime;
+							var pathRequestDateTime = DateTimeOffset.FromUnixTimeSeconds(unixTimestamp).UtcDateTime;
 
-							await context.Response.WriteAsync(dateTime.ToString());
+							await context.Response.WriteAsync(pathRequestDateTime.ToString());
 
-							var files = Directory.GetFiles("/var/www/html/.well-known/acme-challenge");
-							foreach (var file in files)
+							var fileNames = Directory.GetFiles(acmeDirectory);
+							foreach (var fileName in fileNames)
 							{
-								await context.Response.WriteAsync(file);
+								var fileCreationTime = File.GetCreationTime(Path.Combine(acmeDirectory, fileName));
+
+								if (fileCreationTime.Equals(pathRequestDateTime))
+								{
+									await context.Response.WriteAsync(fileName);
+								}
 							}
 						}
 					}
